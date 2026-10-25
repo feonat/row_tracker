@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Whiskey Glass Row Tracker</title>
+<meta name="description" content="Row-by-row tracker for the Whiskey Glass Shawl.">
+<meta name="theme-color" content="#EDEFEE" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15191B" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+button{touch-action:manipulation}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-handed phone tracker — header + progress, big current-row card, thumb-sized buttons, full row list below */
+:root{
+  --bg:#EDEFEE; --surface:#F8F9F8; --line:#D3D8D6; --fg:#1D2326; --muted:#5D686C;
+  --accent:#A8661A; --accent-soft:#F1E1C8; --on-accent:#FFFFFF; --done:#9AA4A7; --warn:#8A4B10;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15191B; --surface:#1E2427; --line:#323A3E; --fg:#E7E4DE; --muted:#9BA5A8;
+  --accent:#E2A452; --accent-soft:#3A2D1C; --on-accent:#1A1309; --done:#5F696C; --warn:#E9B87A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15191B; --surface:#1E2427; --line:#323A3E; --fg:#E7E4DE; --muted:#9BA5A8;
+  --accent:#E2A452; --accent-soft:#3A2D1C; --on-accent:#1A1309; --done:#5F696C; --warn:#E9B87A; color-scheme:dark}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:0 40px}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding-block:14px 10px;display:flex;flex-direction:column;gap:8px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0;letter-spacing:-.01em}
+.overall{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.rowhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rownum{font-family:var(--display);font-weight:700;font-size:3.4rem;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.rownum small{font-size:1rem;color:var(--muted);font-weight:500;letter-spacing:0;margin-left:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip.side{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip.kind{background:var(--accent-soft);color:var(--warn);border-color:transparent}
+.what{font-family:var(--display);font-weight:500;font-size:1.2rem;margin:0}
+.instr{font-family:var(--mono);font-size:1rem;line-height:1.6;background:var(--bg);border-radius:8px;padding:12px 14px;margin:0;white-space:normal;overflow-wrap:anywhere}
+.note{font-size:.9rem;color:var(--warn);background:var(--accent-soft);border-radius:8px;padding:10px 12px;margin:0}
+.sts{display:flex;gap:18px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.sts div{display:flex;flex-direction:column}
+.sts b{font-family:var(--mono);font-size:1.4rem;font-weight:500}
+.sts span{font-size:.78rem;color:var(--muted)}
+.seg{display:flex;flex-direction:column;gap:6px}
+.ticks{display:flex;gap:2px}
+.ticks i{flex:1;height:10px;border-radius:2px;background:var(--line)}
+.ticks i.d{background:var(--done)}
+.ticks i.c{background:var(--accent)}
+.segtxt{font-size:.82rem;color:var(--muted)}
+.btns{display:grid;grid-template-columns:1fr 2.4fr;gap:10px}
+button{font:inherit;cursor:pointer;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:14px 12px;font-weight:700}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.next{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-size:1.15rem;padding-block:20px}
+.next:disabled,.back:disabled{opacity:.4;cursor:default}
+.preview{font-size:.9rem;color:var(--muted);margin:0}
+.preview b{color:var(--fg)}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools button{font-size:.85rem;padding:9px 12px;font-weight:400}
+.tools button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:700}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.9rem}
+.confirm .danger{background:var(--warn);color:var(--bg);border-color:var(--warn)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+summary{cursor:pointer;padding:14px 18px;font-weight:700;font-family:var(--display)}
+.dbody{padding:0 18px 16px}
+.list{display:flex;flex-direction:column}
+.list h3{font-family:var(--display);font-size:.95rem;margin:16px 0 6px;color:var(--muted)}
+.li{display:grid;grid-template-columns:3.2em 2.6em 1fr auto;gap:8px;align-items:baseline;text-align:left;border:0;border-radius:6px;padding:7px 8px;font-weight:400;background:transparent;font-size:.92rem}
+.li .n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.li .s{font-size:.75rem;color:var(--muted)}
+.li .c{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.li.done{color:var(--done)}
+.li.cur{background:var(--accent-soft);color:var(--fg);font-weight:700}
+.li:hover{background:var(--bg)}
+.ref p,.ref li{font-size:.92rem;margin:0 0 6px}
+.ref h4{font-family:var(--display);margin:14px 0 6px}
+@media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="top">
+      <h1>Whiskey Glass Shawl</h1>
+      <span class="overall" id="overall"></span>
+    </div>
+    <div class="bar"><i id="pbar"></i></div>
+  </header>
+
+  <section class="card" aria-live="polite">
+    <div class="eyebrow" id="section"></div>
+    <div class="rowhead">
+      <div class="rownum" id="rownum"></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <p class="what" id="what"></p>
+    <p class="instr" id="instr"></p>
+    <p class="note" id="note" hidden></p>
+    <div class="sts">
+      <div><b id="stsAfter"></b><span>stitches after this row</span></div>
+      <div><b id="stsDelta"></b><span>change</span></div>
+    </div>
+    <div class="seg">
+      <div class="ticks" id="ticks"></div>
+      <div class="segtxt" id="segtxt"></div>
+    </div>
+  </section>
+
+  <div class="btns">
+    <button class="back" id="back" type="button">← Back</button>
+    <button class="next" id="next" type="button">Row done →</button>
+  </div>
+  <p class="preview" id="preview"></p>
+
+  <div class="tools">
+    <button type="button" id="wake" aria-pressed="false">Keep screen on</button>
+    <button type="button" id="reset">Start over</button>
+  </div>
+  <div class="confirm" id="confirm" hidden>
+    <span>Go back to the cast-on? Your place will be lost.</span>
+    <button type="button" class="danger" id="yes">Start over</button>
+    <button type="button" id="no">Cancel</button>
+  </div>
+
+  <details id="all">
+    <summary>All rows · tap one to jump there</summary>
+    <div class="dbody list" id="list"></div>
+  </details>
+
+  <details>
+    <summary>Stitch reference</summary>
+    <div class="dbody ref">
+      <h4>Make bobble (MB)</h4>
+      <ol>
+        <li>Knit into the front, back and front again of the stitch (3 sts from 1).</li>
+        <li>Turn to WS, p3.</li>
+        <li>Turn to RS, k3.</li>
+        <li>Turn to WS, p3.</li>
+        <li>Turn to RS, slip 2, k1, pass the slipped sts over.</li>
+      </ol>
+      <h4>Mirror after the middle stitch</h4>
+      <p>k2tog before the middle stitch becomes skp after it. Row starts and ends mirror too.</p>
+      <h4>Abbreviations</h4>
+      <p>k knit · p purl · yo yarn over · k2tog knit 2 together · skp slip 1, k1, pass slipped st over · m marker · pm place marker · slm slip marker · M1L / M1R make one left / right · BO bind off</p>
+    </div>
+  </details>
+</div>
+
+<script>
+(function(){
+const P  = "k3, yo, p till m, yo, slm, k1, slm, yo, p till edge, yo, k3";
+const K  = "k3, yo, k till m, yo, slm, k1, slm, yo, k till edge, yo, k3";
+const WP = "k3, p till m, slm, p1, slm, p till edge, k3";
+const WK = "k3, k till m, slm, p1, slm, k till edge, k3";
+const L  = "k3, k1, (k2tog, yo) repeat till last 2 sts before m, k2, slm, p1, slm, k2, (yo, skp) repeat till last 1 st before edge, k1, k3";
+const kinds = {
+  P:["Purl across with increases",P,4,null],
+  K:["Knit across with increases",K,4,null],
+  WP:["Purl back",WP,0,null],
+  WK:["Knit back (garter ridge)",WK,0,null],
+  L:["Eyelet row",L,0,"Eyelet"],
+};
+const map = {1:"P",2:"L",3:"P",4:"WP",5:"K",6:"WP",7:"P",8:"WP",9:"P",10:"WK",11:"P",12:"L",13:"K",14:"WP",
+  16:"WK",18:"WK",19:"P",20:"WK",21:"K",22:"WK",23:"K",24:"WP",25:"K",26:"WK",27:"K",28:"WP",29:"K",30:"WP",
+  31:"P",32:"L",33:"P",34:"WP",35:"K",36:"WP",37:"K",38:"WP",39:"K",40:"WP"};
+function patRow(n){
+  if(n===15) return ["Bobble row","k3, yo, k1, (MB, k3) repeat till last 2 sts before m, MB, k1, yo, slm, k1, slm, yo, k1, (MB, k3) repeat till last 2 sts before edge, MB, k1, yo, k3",4,"Bobbles"];
+  if(n===17) return ["Eyelet row with increases","k3, yo, (k2tog, yo) repeat till last st before m, k1, yo, slm, k1, slm, yo, k1, (yo, skp) repeat till edge, yo, k3",4,"Eyelet"];
+  return kinds[map[n]];
+}
+
+const steps=[]; let sts=3;
+function add(o){ sts+=o.delta; o.after=sts; steps.push(o); }
+
+for(let r=1;r<=14;r++) add({seg:"Garter tab",segLen:14,segPos:r,num:r,label:"Row "+r,side:null,what:"Knit",instr:"k3",delta:0});
+add({seg:"Garter tab",segLen:14,segPos:14,num:null,label:"Pick up",side:null,what:"Pick up stitches",instr:"Turn work 90° and pick up 7 sts along the edge. Turn again 90° and pick up 3 sts from the cast-on.",delta:10,kind:"Setup"});
+
+const ub=[
+  ["Set-up row","k3 (edge sts), p7, k3 (edge sts)",0],
+  ["Place markers, increase","k3, yo, k3, yo, pm, k1 (middle stitch), pm, yo, k3, yo, k3",4],
+];
+for(let r=1;r<=11;r++){
+  let w,i,d;
+  if(r<=2){[w,i,d]=ub[r-1];}
+  else if(r%2===0){w="Knit across with increases";i="k3, yo, k till m, yo, slm, k1, slm, yo, k till edge, yo, k3";d=4;}
+  else {w="Purl back";i="k3, p till m, slm, p, slm, p till edge, k3";d=0;}
+  add({seg:"Upper body",segLen:11,segPos:r,num:r,label:"Row "+r,side:r%2?"WS":"RS",what:w,instr:i,delta:d});
+}
+
+const plan=[
+  {name:"Body · Repeat 1 of 3",from:1,to:40},
+  {name:"Body · Repeat 2 of 3",from:1,to:40},
+  {name:"Body · Repeat 3 of 3",from:1,to:40},
+  {name:"Body · Rows 9–40",from:9,to:40},
+  {name:"Body · Full repeat",from:1,to:40},
+  {name:"Body · Rows 1–18",from:1,to:18},
+];
+for(const s of plan){
+  const len=s.to-s.from+1;
+  for(let r=s.from;r<=s.to;r++){
+    const [w,i,d,k]=patRow(r);
+    const o={seg:s.name,segLen:len,segPos:r-s.from+1,num:r,label:"Row "+r,side:r%2?"RS":"WS",what:w,instr:i,delta:d,kind:k,pat:true};
+    if(r===2||r===12||r===32) o.note="Eyelet pattern worked on a WS row, as written in the pattern.";
+    add(o);
+  }
+}
+// mark checkpoint counts and note the 449 discrepancy
+const last=steps[steps.length-1];
+last.note="The pattern lists 449 sts here. Counting the yarn-over increases gives "+last.after+". Go by what is on your needles.";
+
+for(let r=1;r<=18;r++){
+  const odd=r%2===1;
+  add({seg:"Garter border",segLen:18,segPos:r,num:r,label:"Row "+r,side:odd?"RS":"WS",
+    what:odd?"Knit with M1 increases":"Knit back",
+    instr:odd?"k3, M1R, k till m, M1L, slm, k1, slm, M1R, k till edge, M1L, k3":"Knit all stitches (middle stitch too)",
+    delta:odd?4:0,kind:"Garter",
+    note:r===1?"The middle stitch is knit in garter from here on. Keep your markers in place.":null});
+}
+add({seg:"Finish",segLen:1,segPos:1,num:null,label:"Bind off",side:null,what:"Bind off and block",instr:"Bind off loosely. Weave in all ends and wet block your shawl.",delta:0,kind:"Finish",final:true});
+
+const total=steps.length;
+const KEY="wgs-row-tracker-v1";
+let idx=0;
+try{const v=parseInt(localStorage.getItem(KEY),10); if(v>=0&&v<total) idx=v;}catch(e){}
+function save(){try{localStorage.setItem(KEY,String(idx));}catch(e){}}
+
+const $=id=>document.getElementById(id);
+function render(){
+  const s=steps[idx];
+  $("section").textContent=s.seg;
+  $("rownum").innerHTML = s.num!=null ? "Row "+s.num+(s.pat?"<small>of 40</small>":"") : s.label;
+  const chips=[];
+  if(s.side) chips.push('<span class="chip side">'+s.side+'</span>');
+  if(s.kind) chips.push('<span class="chip kind">'+s.kind+'</span>');
+  $("chips").innerHTML=chips.join("");
+  $("what").textContent=s.what;
+  $("instr").textContent=s.instr;
+  $("note").hidden=!s.note; $("note").textContent=s.note||"";
+  $("stsAfter").textContent=s.after;
+  $("stsDelta").textContent=s.delta?"+"+s.delta:"0";
+  let t="";
+  for(let i=1;i<=s.segLen;i++) t+='<i class="'+(i<s.segPos?"d":i===s.segPos?"c":"")+'"></i>';
+  $("ticks").innerHTML=t;
+  $("segtxt").textContent=s.segLen>1?("Step "+s.segPos+" of "+s.segLen+" in this section"):"Last step";
+  $("overall").textContent=idx+" of "+total+" done · "+Math.round(idx/total*100)+"%";
+  $("pbar").style.width=(idx/total*100)+"%";
+  $("back").disabled=idx===0;
+  $("next").textContent=s.final?"Finished!":"Row done →";
+  $("next").disabled=!!s.final && idx===total-1 && done;
+  const n=steps[idx+1];
+  $("preview").innerHTML=n?("Next: <b>"+n.seg+", "+(n.num!=null?"row "+n.num:n.label)+"</b> · "+n.what):(done?"All done. Enjoy your shawl.":"This is the last step.");
+  document.querySelectorAll(".li").forEach((el,i)=>{
+    el.classList.toggle("done",i<idx); el.classList.toggle("cur",i===idx);
+  });
+}
+let done=false;
+$("next").onclick=()=>{ if(idx<total-1){idx++;} else {done=true;} save(); render(); };
+$("back").onclick=()=>{ done=false; if(idx>0){idx--; save(); render();} };
+document.addEventListener("keydown",e=>{
+  if(e.target.closest&&e.target.closest("input,textarea")) return;
+  if(e.key==="ArrowRight"){e.preventDefault();$("next").click();}
+  if(e.key==="ArrowLeft"){e.preventDefault();$("back").click();}
+});
+$("reset").onclick=()=>{$("confirm").hidden=false;};
+$("no").onclick=()=>{$("confirm").hidden=true;};
+$("yes").onclick=()=>{idx=0;done=false;save();$("confirm").hidden=true;render();window.scrollTo(0,0);};
+
+// list
+let html="",cur=null;
+steps.forEach((s,i)=>{
+  if(s.seg!==cur){cur=s.seg;html+="<h3>"+s.seg+"</h3>";}
+  html+='<button type="button" class="li" data-i="'+i+'"><span class="n">'+(s.num!=null?s.num:"—")+'</span><span class="s">'+(s.side||"")+'</span><span>'+(s.num!=null?"":s.label+" · ")+s.what+'</span><span class="c">'+s.after+' sts</span></button>';
+});
+$("list").innerHTML=html;
+$("list").addEventListener("click",e=>{
+  const b=e.target.closest(".li"); if(!b) return;
+  idx=+b.dataset.i; done=false; save(); render(); window.scrollTo({top:0,behavior:"smooth"});
+});
+
+// wake lock
+let lock=null;
+$("wake").onclick=async()=>{
+  if(lock){try{await lock.release();}catch(e){} lock=null; $("wake").setAttribute("aria-pressed","false"); $("wake").textContent="Keep screen on"; return;}
+  try{
+    lock=await navigator.wakeLock.request("screen");
+    $("wake").setAttribute("aria-pressed","true"); $("wake").textContent="Screen stays on";
+    lock.addEventListener("release",()=>{lock=null;$("wake").setAttribute("aria-pressed","false");$("wake").textContent="Keep screen on";});
+  }catch(e){$("wake").textContent="Screen lock not available here";}
+};
+
+render();
+})();
+</script>
+
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});
+}
+</script>
+</body>
+</html>
